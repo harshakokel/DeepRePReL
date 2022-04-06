@@ -1,7 +1,8 @@
 # Deep RePReL
-## Combining Planning and Deep RL for acting in relational domains
 
-This repository contains batch RL based implementation of RePReL with deep reinforcement learning as well as deep relational reinforcement learning. More details about the batch RePReL learning algorithm can be found in our paper [here](https://openreview.net/forum?id=ffLKUFlsFK0).  
+Combining Planning and Deep RL for acting in relational domains
+
+This repository contains batch RL based implementation of RePReL with deep reinforcement learning as well as deep relational reinforcement learning. More details about the batch RePReL learning algorithm can be found in our paper [here](https://openreview.net/forum?id=ffLKUFlsFK0). 
 
 ## Installation
 
@@ -31,8 +32,9 @@ FetchBlockConstruction domain requirements
 
 4. Run experiments from [examples](./examples). Refer to the [RePReL documentation](./docs/RePReL.md) for more details.
 
+> Refer the other [RePReL repository](https://github.com/harshakokel/RePReL) for the tabular reinforcement learning implementation.
 
-### Citation
+## Citation
 
 Please consider citing the following paper if you find our codes helpful. Thank you!
 
