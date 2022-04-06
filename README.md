@@ -32,7 +32,7 @@ FetchBlockConstruction domain requirements
 
 4. Run experiments from [examples](./examples). Refer to the [RePReL documentation](./docs/RePReL.md) for more details.
 
-> Refer the other [RePReL repository](https://github.com/harshakokel/RePReL) for the tabular reinforcement learning implementation.
+> The tabular reinforcement learning implementation is available in the other repository [here](https://github.com/harshakokel/RePReL).
 
 ## Citation
 
@@ -54,7 +54,7 @@ For RePReL framework,
 
 ```
 
-For Deep RePReL framework,
+For Deep RePReL framework and the batch learning algorithm,
 
 ```
 @article{KokelMNBTDRL,
@@ -62,6 +62,19 @@ For Deep RePReL framework,
    author={Kokel, Harsha and Manoharan, Arjun and Natarajan, Sriraam and Ravindran, Balaraman and Tadepalli, Prasad},
    journal={Deep {RL} Workshop at {NeurIPS}},
    year={2021},
+   url={https://openreview.net/forum?id=ffLKUFlsFK0}
+}
+```
+
+For D-FOCI and use of SRL,
+
+```
+@article{KokelMNBTSTARAI,
+   title={Dynamic probabilistic logic models for effective abstractions in RL},
+   author={Kokel, Harsha and Manoharan, Arjun and Natarajan, Sriraam and Ravindran, Balaraman and Tadepalli, Prasad},
+   journal = {{StarAI} Workshop at {IJCLR}},
+   url={https://arxiv.org/abs/2110.08318}
+   year={2021},
 }
 ```
 
