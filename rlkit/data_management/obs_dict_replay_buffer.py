@@ -32,6 +32,7 @@ class ObsDictRelabelingBuffer(ReplayBuffer):
             observation_key='observation',
             desired_goal_key='desired_goal',
             achieved_goal_key='achieved_goal',
+            ob_spaces=None
     ):
         if internal_keys is None:
             internal_keys = []
@@ -69,7 +70,9 @@ class ObsDictRelabelingBuffer(ReplayBuffer):
         # self._obs[key][i] is the value of observation[key] at time i
         self._obs = {}
         self._next_obs = {}
-        self.ob_spaces = self.env.observation_space.spaces
+        if ob_spaces is None:
+            ob_spaces = self.env.observation_space.spaces
+        self.ob_spaces = ob_spaces
         for key in self.ob_keys_to_save + internal_keys:
             assert key in self.ob_spaces, \
                 "Key not found in the observation space: %s" % key

@@ -7,6 +7,10 @@ from rlkit.core import logger, eval_util
 from rlkit.data_management.replay_buffer import ReplayBuffer
 from rlkit.samplers.data_collector import DataCollector
 
+try:
+    from mpi4py import MPI
+except ImportError:
+    MPI = None
 
 def _get_epoch_timings():
     times_itrs = gt.get_times().stamps.itrs
@@ -52,8 +56,13 @@ class BaseRLAlgorithm(object, metaclass=abc.ABCMeta):
         raise NotImplementedError('_train must implemented by inherited class')
 
     def _end_epoch(self, epoch):
-        snapshot = self._get_snapshot()
-        logger.save_itr_params(epoch, snapshot)
+        if MPI:
+            if MPI.COMM_WORLD.Get_rank() == 0:
+                snapshot = self._get_snapshot()
+                logger.save_itr_params(epoch, snapshot)
+        else:
+            snapshot = self._get_snapshot()
+            logger.save_itr_params(epoch, snapshot)
         gt.stamp('saving')
         self._log_stats(epoch)
 

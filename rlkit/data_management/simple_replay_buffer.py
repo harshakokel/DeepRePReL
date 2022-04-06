@@ -97,3 +97,20 @@ class SimpleReplayBuffer(ReplayBuffer):
         return OrderedDict([
             ('size', self._size)
         ])
+
+
+class SimpleReplayBufferDiscreteAction(SimpleReplayBuffer):
+
+    def add_sample(self, observation, action, reward, next_observation,
+                   terminal, env_info, **kwargs):
+        new_action = np.zeros(self._action_dim)
+        new_action[action] = 1
+        return super().add_sample(
+            observation=observation,
+            action=new_action,
+            reward=reward,
+            next_observation=next_observation,
+            terminal=terminal,
+            env_info=env_info,
+            **kwargs
+        )

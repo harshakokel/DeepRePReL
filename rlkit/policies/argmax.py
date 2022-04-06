@@ -16,6 +16,7 @@ class ArgmaxDiscretePolicy(nn.Module, Policy):
     def get_action(self, obs):
         obs = np.expand_dims(obs, axis=0)
         obs = ptu.from_numpy(obs).float()
-        q_values = self.qf(obs).squeeze(0)
-        q_values_np = ptu.get_numpy(q_values)
-        return q_values_np.argmax(), {}
+        q_values = self.qf(obs)
+        q_values_np = ptu.get_numpy(q_values.squeeze(0))
+        a = np.random.choice(np.where(q_values_np == q_values_np.max())[0], 1)[0]
+        return a, {}

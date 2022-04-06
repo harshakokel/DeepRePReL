@@ -58,7 +58,13 @@ def get_generic_path_information(paths, stat_prefix=''):
                     all_ks,
                     stat_prefix='{}/'.format(info_key),
                 ))
-
+    all_env_infos = [
+        ppp.list_of_dicts__to__dict_of_lists(p['env_infos'])
+        for p in paths
+    ]
+    goal = [sum(info['is_success']) > 1 for info in all_env_infos]
+    statistics.update(create_stats_ordered_dict('goal', goal,
+                                            stat_prefix=stat_prefix))
     return statistics
 
 

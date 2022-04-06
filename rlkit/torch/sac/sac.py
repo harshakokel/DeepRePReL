@@ -13,6 +13,8 @@ from rlkit.torch.torch_rl_algorithm import TorchTrainer
 from rlkit.core.logging import add_prefix
 import gtimer as gt
 
+from rlkit.torch.optim.mpi_adam import MpiAdam
+
 SACLosses = namedtuple(
     'SACLosses',
     'policy_loss qf1_loss qf2_loss alpha_loss',
@@ -65,6 +67,7 @@ class SACTrainer(TorchTrainer, LossFunction):
             self.alpha_optimizer = optimizer_class(
                 [self.log_alpha],
                 lr=policy_lr,
+                gpu_id=self.gpu_id if ptu.get_mode() == "gpu_opt" else None
             )
 
         self.plotter = plotter
@@ -76,15 +79,24 @@ class SACTrainer(TorchTrainer, LossFunction):
         self.policy_optimizer = optimizer_class(
             self.policy.parameters(),
             lr=policy_lr,
+            gpu_id=self.gpu_id if ptu.get_mode() == "gpu_opt" else None
         )
         self.qf1_optimizer = optimizer_class(
             self.qf1.parameters(),
             lr=qf_lr,
+            gpu_id=self.gpu_id if ptu.get_mode() == "gpu_opt" else None
         )
         self.qf2_optimizer = optimizer_class(
             self.qf2.parameters(),
             lr=qf_lr,
+            gpu_id=self.gpu_id if ptu.get_mode() == "gpu_opt" else None
         )
+
+        if optimizer_class is MpiAdam:
+            self.qf1_optimizer.sync()
+            self.qf2_optimizer.sync()
+            self.alpha_optimizer.sync()
+            self.policy_optimizer.sync()
 
         self.discount = discount
         self.reward_scale = reward_scale
@@ -261,4 +273,11 @@ class SACTrainer(TorchTrainer, LossFunction):
             qf2=self.qf2,
             target_qf1=self.target_qf1,
             target_qf2=self.target_qf2,
+            log_alpha=self.log_alpha,
+            optimizers=dict(
+                alpha_optimizer=self.alpha_optimizer,
+                q1_optimizer=self.qf1_optimizer,
+                q2_optimizer=self.qf2_optimizer,
+                policy_optimizer=self.policy_optimizer,
+            )
         )

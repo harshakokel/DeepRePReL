@@ -9,6 +9,7 @@ from torch import nn as nn
 import rlkit.torch.pytorch_util as ptu
 from rlkit.policies.base import ExplorationPolicy
 from rlkit.torch.core import torch_ify, elem_or_tuple_to_numpy
+from rlkit.torch.data_management.normalizer import CompositeNormalizer
 from rlkit.torch.distributions import (
     Delta, TanhNormal, MultivariateDiagonalNormal, GaussianMixture, GaussianMixtureFull,
 )
@@ -127,6 +128,16 @@ class TanhGaussianPolicy(Mlp, TorchStochasticPolicy):
         )
         log_prob = log_prob.sum(dim=1, keepdim=True)
         return log_prob
+
+
+class FlattenTanhGaussianPolicy(TanhGaussianPolicy):
+    """
+    Flatten inputs along dimension 1 and then pass through MLP.
+    """
+
+    def forward(self, *inputs, **kwargs):
+        flat_inputs = torch.cat(inputs, dim=1)
+        return super().forward(flat_inputs, **kwargs)
 
 
 class GaussianPolicy(Mlp, TorchStochasticPolicy):
@@ -494,3 +505,56 @@ class TanhCNNGaussianPolicy(CNN, TorchStochasticPolicy):
 
         tanh_normal = TanhNormal(mean, std)
         return tanh_normal
+
+
+class CompositeNormalizedTanhGaussianPolicy(TanhGaussianPolicy):
+    def __init__(
+            self,
+            *args,
+            composite_normalizer: CompositeNormalizer = None,
+            lop_state_dim=None,
+            preprocessing_kwargs=None,
+            num_blocks=None,
+            demo_composite_normalizer: CompositeNormalizer = None,
+            **kwargs
+    ):
+        assert composite_normalizer is not None
+        self.save_init_params(locals())
+        super().__init__(*args, **kwargs)
+        self.composite_normalizer = composite_normalizer
+        self.demo_composite_normalizer = demo_composite_normalizer
+
+        self.forward_activations = dict()
+        self.lop_state_dim = lop_state_dim
+        # ptu.register_forward_hooks(self, self.forward_activations)
+        self.preprocessing_kwargs = preprocessing_kwargs
+        self.num_blocks = num_blocks
+
+    def forward(self, observations, blindfold_focus_block=None, demo_normalizer=False, **kwargs):
+        # if self.lop_state_dim:
+        #     obs = obs.narrow(1, 0,
+        #                      obs.size(1) - self.lop_state_dim)  # Chop off the final 3 dimension of gripper position
+        # obs, _ = self.composite_normalizer.normalize_all(obs, None)
+        # return super().forward(obs, **kwargs)
+
+        shared_state, object_goal_state = fetch_preprocessing(observations,
+                                                              normalizer=self.demo_composite_normalizer if demo_normalizer else self.composite_normalizer,
+                                                              **self.preprocessing_kwargs)
+
+        if blindfold_focus_block is not None:
+            assert isinstance(blindfold_focus_block, int)
+            # assert blindfold_focus_block >= 0 and blindfold_focus_block < self.num_blocks
+            object_goal_state = object_goal_state.narrow(1, blindfold_focus_block, 1)
+            shared_state = shared_state.narrow(1, blindfold_focus_block, 1)
+            assert object_goal_state.size(1) == 1, object_goal_state.size(1)
+            assert shared_state.size(1) == 1, shared_state.size(1)
+
+        flat_input = invert_fetch_preprocessing(shared_state, object_goal_state, num_blocks=self.num_blocks,
+                                                **self.preprocessing_kwargs)
+
+        if blindfold_focus_block is None:
+            assert observations.size(-1) - self.lop_state_dim == flat_input.size(-1), (
+            observations.size(-1) - self.lop_state_dim, flat_input.size(-1))
+            assert len(observations.size()) == len(flat_input.size()) == 2
+
+        return super().forward(flat_input, **kwargs)

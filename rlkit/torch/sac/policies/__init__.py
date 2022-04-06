@@ -12,6 +12,8 @@ from rlkit.torch.sac.policies.gaussian_policy import (
     BinnedGMMPolicy,
     TanhGaussianObsProcessorPolicy,
     TanhCNNGaussianPolicy,
+    FlattenTanhGaussianPolicy,
+    CompositeNormalizedTanhGaussianPolicy
 )
 from rlkit.torch.sac.policies.lvm_policy import LVMPolicy
 from rlkit.torch.sac.policies.policy_from_q import PolicyFromQ
@@ -31,4 +33,6 @@ __all__ = [
     'TanhCNNGaussianPolicy',
     'LVMPolicy',
     'PolicyFromQ',
+    'FlattenTanhGaussianPolicy',
+    'CompositeNormalizedTanhGaussianPolicy'
 ]

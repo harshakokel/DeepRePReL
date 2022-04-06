@@ -30,6 +30,7 @@ GitInfo = namedtuple(
 
 
 def get_git_infos(dirs):
+    git_infos = None
     try:
         import git
         git_infos = []
@@ -48,6 +49,7 @@ def get_git_infos(dirs):
                     commit_hash=repo.head.commit.hexsha,
                     branch_name=branch_name,
                 ))
+                repo.__del__()
             except git.exc.InvalidGitRepositoryError as e:
                 print("Not a valid git repo: {}".format(directory))
     except ImportError:
@@ -262,7 +264,7 @@ def setup_logger(
     first_time = log_dir is None
     if first_time:
         log_dir = create_log_dir(exp_prefix, **create_log_dir_kwargs)
-
+    logger.log(f"Log dir: {log_dir}")
     if variant is not None:
         logger.log("Variant:")
         logger.log(json.dumps(dict_to_safe_json(variant), indent=2))

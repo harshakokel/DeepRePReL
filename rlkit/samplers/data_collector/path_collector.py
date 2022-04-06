@@ -18,15 +18,19 @@ class MdpPathCollector(PathCollector):
             render_kwargs=None,
             rollout_fn=rollout,
             save_env_in_snapshot=True,
+            epsilon_decay = False,
+            get_action_kwargs=None
     ):
         if render_kwargs is None:
             render_kwargs = {}
         self._env = env
         self._policy = policy
+        self.epsilon_decay = epsilon_decay
         self._max_num_epoch_paths_saved = max_num_epoch_paths_saved
         self._epoch_paths = deque(maxlen=self._max_num_epoch_paths_saved)
         self._render = render
         self._render_kwargs = render_kwargs
+        self._get_action_kwargs = get_action_kwargs
         self._rollout_fn = rollout_fn
 
         self._num_steps_total = 0
@@ -53,6 +57,7 @@ class MdpPathCollector(PathCollector):
                 max_path_length=max_path_length_this_loop,
                 render=self._render,
                 render_kwargs=self._render_kwargs,
+                get_action_kwargs=self._get_action_kwargs
             )
             path_len = len(path['actions'])
             if (
@@ -66,12 +71,16 @@ class MdpPathCollector(PathCollector):
         self._num_paths_total += len(paths)
         self._num_steps_total += num_steps_collected
         self._epoch_paths.extend(paths)
+        if self.epsilon_decay:
+            self._epsilon = self._policy.es.epsilon
         return paths
 
     def get_epoch_paths(self):
         return self._epoch_paths
 
     def end_epoch(self, epoch):
+        if self.epsilon_decay:
+            self._policy.es.decay()
         self._epoch_paths = deque(maxlen=self._max_num_epoch_paths_saved)
 
     def get_diagnostics(self):
@@ -80,6 +89,12 @@ class MdpPathCollector(PathCollector):
             ('num steps total', self._num_steps_total),
             ('num paths total', self._num_paths_total),
         ])
+        if self.epsilon_decay:
+            stats.update(create_stats_ordered_dict(
+            "Epsilon value",
+            self._epsilon,
+            always_show_all_stats=True,
+            ))
         stats.update(create_stats_ordered_dict(
             "path length",
             path_lens,
@@ -103,6 +118,7 @@ class GoalConditionedPathCollector(MdpPathCollector):
             observation_key='observation',
             desired_goal_key='desired_goal',
             goal_sampling_mode=None,
+            epsilon_decay = False,
             **kwargs
     ):
         def obs_processor(o):
@@ -114,6 +130,7 @@ class GoalConditionedPathCollector(MdpPathCollector):
         )
         super().__init__(*args, rollout_fn=rollout_fn, **kwargs)
         self._observation_key = observation_key
+        self.epsilon_decay = epsilon_decay
         self._desired_goal_key = desired_goal_key
         self._goal_sampling_mode = goal_sampling_mode
 
@@ -128,6 +145,31 @@ class GoalConditionedPathCollector(MdpPathCollector):
             desired_goal_key=self._desired_goal_key,
         )
         return snapshot
+
+    def end_epoch(self, epoch):
+        if self.epsilon_decay:
+
+            self._policy.es.decay()
+        self._epoch_paths = deque(maxlen=self._max_num_epoch_paths_saved)
+
+    def get_diagnostics(self):
+        path_lens = [len(path['actions']) for path in self._epoch_paths]
+        stats = OrderedDict([
+            ('num steps total', self._num_steps_total),
+            ('num paths total', self._num_paths_total),
+        ])
+        if self.epsilon_decay:
+            stats.update(create_stats_ordered_dict(
+            "epsilon value",
+            self._epsilon,
+            always_show_all_stats=True,
+            ))
+        stats.update(create_stats_ordered_dict(
+            "path length",
+            path_lens,
+            always_show_all_stats=True,
+        ))
+        return stats
 
 
 class ObsDictPathCollector(MdpPathCollector):
